@@ -7,7 +7,6 @@ import java.io.IOException;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.ContentType;
@@ -24,9 +23,8 @@ public class Uploader {
     Uploader(){
     }
     
-    public void upload(String filename) throws FileNotFoundException{
+    public void upload(String filename, String idDocument) throws FileNotFoundException{
     	File sourceFile = new File(filename);
-    	HttpPost post = null;
     	
         if(!sourceFile.exists()) {
         	throw new FileNotFoundException();     
@@ -42,11 +40,20 @@ public class Uploader {
                     .addTextBody("titre", "Titre de mon document", ContentType.DEFAULT_TEXT)
                     .build();
 
-            HttpUriRequest request = RequestBuilder
-                    .post(PUL_SERVICES_URL)
-                    .setEntity(data)
-                    .setHeader("Authorization", "Bearer " + accessToken)
-                    .build();
+            HttpUriRequest request = null;
+            if (idDocument == null) {
+	            request = RequestBuilder
+	                    .post(PUL_SERVICES_URL)
+	                    .setEntity(data)
+	                    .setHeader("Authorization", "Bearer " + accessToken)
+	                    .build();
+            } else {
+	            request = RequestBuilder
+	                    .put(PUL_SERVICES_URL + "&iddocument=" + idDocument)
+	                    .setEntity(data)
+	                    .setHeader("Authorization", "Bearer " + accessToken)
+	                    .build();
+            }
 
             System.out.println("Executing request " + request.getRequestLine());
 
@@ -63,23 +70,23 @@ public class Uploader {
             System.out.println("----------------------------------------");
             System.out.println(responseBody);
         } catch (IOException e) {
-				e.printStackTrace();
-		} finally {
-			if (post != null) {
-				post.completed();
-			}
+			e.printStackTrace();
 		}
     }
 
     public static void main(String[] args) {
     	if (args.length == 0) {
-    		System.err.println("Usage: Uploader <filename>");
+    		System.err.println("Usage: Uploader <filename> [<iddocument>]");
     		System.exit(-1);
     	}
     	String filename = args[0];
+    	String iddocument = null;
+    	if (args.length == 2) {
+    		iddocument = args[1];
+    	}
         Uploader uploader = new Uploader();
         try {
-			uploader.upload(filename);
+			uploader.upload(filename, iddocument);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} 
